@@ -1,23 +1,27 @@
 package is.spbstu.board;
 
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.util.*;
 
 public class CrossBoard {
 
     public static final int HAND_LONG_SIDE_LENGTH = 6;
     public static final int HAND_SHORT_SIDE_WIDTH = 3;
-    private List<Field> crossFields = new ArrayList<>();
 
-    private Map<Color, List<Field>> lastLineFieldsByColor = new HashMap<>();
+    private Map<Color, Map<Field, List<Peg>>> lastLineFieldsByColor = new HashMap<>();
     private Map<Color, Field> sourceFields = new HashMap<>();
     private Map<Color, Field> targetFields = new HashMap<>();
     private Map<Peg, Field> fieldByPeg = new HashMap<>();
-    private Map<Field, List<Peg>> pegsByField = new HashMap<>();
-
+    private Map<Field, List<Peg>> pegsByField = new LinkedHashMap<>();
     private Set<Peg> wentThroughZero = new HashSet<>();
+    private Map<Color, List<Peg>> homeTrianglesByColor = new HashMap<>();
 
-    public CrossBoard() {
+    private int handLongSideLength;
+    private int handShortSideWidth;
+
+    public CrossBoard(int handLongSideLength, int handShortSideWidth) {
 
         boolean longSideOffset = false;
         boolean shortSideOffset = true;
@@ -29,62 +33,83 @@ public class CrossBoard {
             int columnNumber = 0;
             int rowNumber = 0;
 
-            while (rowNumber <= HAND_LONG_SIDE_LENGTH - (1 + (longSideOffset ? 1 : 0))) {
-                crossFields.add(new Field(fieldNumber));
+            while (rowNumber <= handLongSideLength - (1 + (longSideOffset ? 1 : 0))) {
+                pegsByField.put(new Field(fieldNumber), new ArrayList<>());
                 rowNumber++;
                 fieldNumber++;
             }
 
             longSideOffset = !longSideOffset;
 
-            while (columnNumber <= HAND_SHORT_SIDE_WIDTH - (1 + (shortSideOffset ? 1 : 0))) {
-                crossFields.add(new Field(fieldNumber));
+            Field lastField = null;
+            Field previousField = null;
+
+            while (columnNumber <= handShortSideWidth - (1 + (shortSideOffset ? 1 : 0))) {
+                Field field = new Field(fieldNumber);
+                pegsByField.put(field, new ArrayList<>());
                 columnNumber++;
                 fieldNumber++;
+                previousField = lastField;
+                lastField = field;
             }
 
-
-            Field sourceField = crossFields.get(crossFields.size() - 1);
-            Field targetField = crossFields.get(crossFields.size() - 2);
+            Field sourceField = lastField;
+            Field targetField = previousField;
 
             sourceFields.put(colors[i], sourceField);
             targetFields.put(colors[i], targetField);
 
             rowNumber = 0;
 
-            while (rowNumber <= HAND_LONG_SIDE_LENGTH - (1 + (longSideOffset ? 1 : 0))) {
-                crossFields.add(new Field(fieldNumber));
+            while (rowNumber <= handLongSideLength - (1 + (longSideOffset ? 1 : 0))) {
+                pegsByField.put(new Field(fieldNumber), new ArrayList<>());
                 rowNumber++;
                 fieldNumber++;
             }
 
             longSideOffset = !longSideOffset;
 
-            List<Field> lastLine = new ArrayList<>();
-            for (int l=0; l<HAND_LONG_SIDE_LENGTH-1; l++){
-                lastLine.add(new Field(l));
+            Map<Field, List<Peg>> lastLineMap = new HashMap<>();
+            for (int l = 0; l < handLongSideLength + 1; l++) {
+                lastLineMap.put(new Field(l, true), new ArrayList<>());
             }
 
-            lastLineFieldsByColor.put(colors[i], lastLine);
+            lastLineFieldsByColor.put(colors[i], lastLineMap);
+            homeTrianglesByColor.put(colors[i], new ArrayList<>());
         }
+
+        this.handLongSideLength = handLongSideLength;
+        this.handShortSideWidth = handShortSideWidth;
     }
 
-    public Optional<Peg> moveBasePeg(Peg peg, MovePegType movePegType) {
+    public Pair<Peg, Optional<Peg>> moveBasePeg(Peg peg, MovePegType movePegType) {
         Color color = peg.color();
         Field sourceField = sourceFields.get(color);
 
-        return movePeg(sourceField, peg, movePegType);
+        return movePeg(Pair.of(Optional.of(sourceField), false), peg, movePegType, Optional.empty());
     }
 
-    public MovePegType isPossibleMoveActivePeg(Color color, int pegNumber, int diceNumber){
-        Peg targetPeg = new Peg(color, pegNumber);
-        Field targetField = getOffsetFieldForPeg(diceNumber, targetPeg);
-        return isPossibleMoveActivePeg(targetField, targetPeg);
+    public MovePegType isPossibleMoveActivePeg(Player currentPlayer, int pegNumber, int diceNumber) {
+        Peg targetPeg = new Peg(currentPlayer.getColor(), pegNumber);
+
+        if (!currentPlayer.getActivePegs().contains(targetPeg)) {
+            return MovePegType.NO_SOURCE;
+        }
+
+        Pair<Optional<Field>, Boolean> targetFieldWithZeroMark = getOffsetFieldForPeg(diceNumber, targetPeg);
+        return targetFieldWithZeroMark.getLeft().isPresent() ? isPossibleMovePeg(targetFieldWithZeroMark.getLeft().get(), targetPeg)
+                : MovePegType.LAST_LINE_LIMIT_EXCESS;
     }
 
-    public MovePegType isPossibleMoveActivePeg(Field targetField, Peg peg){
+    public MovePegType isPossibleMovePeg(Field targetField, Peg peg) {
 
-        List<Peg> fieldPegs = pegsByField.getOrDefault(targetField, new ArrayList<>());
+        int lastLineSize = lastLineFieldsByColor.get(peg.color()).size();
+        if (targetField.isLastLineField() && targetField.number()> lastLineSize -1){
+            return MovePegType.LAST_LINE_LIMIT_EXCESS;
+        }
+
+        List<Peg> fieldPegs = targetField.isLastLineField()?
+                lastLineFieldsByColor.get(peg.color()).get(targetField): pegsByField.get(targetField);
 
         if (!fieldPegs.isEmpty()) {
             if (fieldPegs.size() == 2) {
@@ -97,74 +122,133 @@ public class CrossBoard {
 
         return MovePegType.NORMAL;
     }
-    
-    public Optional<Peg> movePeg(Field targetField, Peg peg, MovePegType movePegType) {
 
-        List<Peg> fieldPegs = pegsByField.getOrDefault(targetField, new ArrayList<>());
+    public Pair<Peg, Optional<Peg>> movePeg(Pair<Optional<Field>, Boolean> destinationFieldWithZeroMark, Peg peg, MovePegType movePegType,
+                                            Optional<Field> sourceFieldOpt) {
 
-        switch (movePegType){
+        Field destinationField = destinationFieldWithZeroMark.getLeft().get();
+        Map<Field, List<Peg>> lastLinePegsByField = lastLineFieldsByColor.get(peg.color());
+
+        List<Peg> destinationFieldPegs = destinationField.isLastLineField()?
+                lastLinePegsByField.get(destinationField): pegsByField.get(destinationField);
+
+        List<Peg> sourceFieldPegs = sourceFieldOpt.isPresent()?  sourceFieldOpt.get().isLastLineField()?
+                lastLinePegsByField.get(sourceFieldOpt.get()): pegsByField.get(sourceFieldOpt.get()):
+                new ArrayList<>();
+
+        if (destinationFieldWithZeroMark.getRight()){
+            wentThroughZero.add(peg);
+        }
+
+        switch (movePegType) {
             case WITH_EAT -> {
-                Peg opponentPeg = fieldPegs.get(0);
+                Peg opponentPeg = destinationFieldPegs.get(0);
                 fieldByPeg.remove(opponentPeg);
-                fieldPegs.clear();
-                return Optional.of(opponentPeg);
+                fieldByPeg.put(peg, destinationField);
+                sourceFieldPegs.remove(peg);
+                destinationFieldPegs.clear();
+                destinationFieldPegs.add(peg);
+                return Pair.of(peg, Optional.of(opponentPeg));
             }
             case NORMAL -> {
-                fieldByPeg.put(peg, targetField);
+                // last line only relevant option
+                fieldByPeg.put(peg, destinationField);
+                sourceFieldPegs.remove(peg);
+                destinationFieldPegs.add(peg);
 
-                fieldPegs.add(peg);
-                pegsByField.put(targetField, fieldPegs);
-                return Optional.empty();
+                if (destinationField.isLastLineField() &&
+                        destinationField.number() ==lastLinePegsByField.keySet().size()-1){
+                    homeTrianglesByColor.get(peg.color()).add(peg);
+                    fieldByPeg.remove(peg);
+                    destinationFieldPegs.remove(peg);
+                    wentThroughZero.remove(peg);
+                }
+                return Pair.of(peg, Optional.empty());
             }
-            default -> {
-                return Optional.empty();
-            }
+            default -> throw new IllegalStateException("Before calling this method you should " +
+                    "check possibility of the move");
         }
     }
 
-    public Optional<Peg> moveActivePeg(Color color, int pegNumber, int diceNumber, MovePegType movePegType) {
+    public Pair<Peg, Optional<Peg>> moveActivePeg(Color color, int pegNumber, int diceNumber, MovePegType movePegType) {
 
         Peg targetPeg = new Peg(color, pegNumber);
-        Field targetField = getOffsetFieldForPeg(diceNumber, targetPeg);
+        Pair<Optional<Field>, Boolean> targetFieldWithZeroMark = getOffsetFieldForPeg(diceNumber, targetPeg);
 
-        return movePeg(targetField, targetPeg, movePegType);
+        if (targetFieldWithZeroMark.getLeft().isEmpty()) {
+            throw new IllegalStateException("Before moving the peg, check for possibility of the move should be done");
+        }
+
+        return movePeg(targetFieldWithZeroMark, targetPeg, movePegType, Optional.ofNullable(fieldByPeg.get(targetPeg)));
     }
 
-    private Field getOffsetFieldForPeg(int diceNumber, Peg targetPeg) {
+    private Pair<Optional<Field>, Boolean> getOffsetFieldForPeg(int diceNumber, Peg targetPeg) {
 
         Field sourceField = sourceFields.get(targetPeg.color());
-
         Field previousField = fieldByPeg.get(targetPeg);
-
+        boolean wentThroughZeroFlg = wentThroughZero.contains(targetPeg);
 
         int targetFieldNumber = previousField.number() + diceNumber;
 
-        if(targetFieldNumber > crossFields.size()-1) {
-            targetFieldNumber = targetFieldNumber % crossFields.size();
-            wentThroughZero.add(targetPeg);
+        if ((!wentThroughZeroFlg) && (targetFieldNumber > pegsByField.keySet().size() - 1)) {
+            targetFieldNumber = targetFieldNumber % pegsByField.keySet().size();
+            wentThroughZeroFlg = true;
         }
 
-        if ((wentThroughZero.contains(targetPeg))&&(targetFieldNumber > sourceField.number()-1)) {
-            int offsetOnLastRoad = targetFieldNumber - sourceField.number(); //TODO: remove after eat + recognize type
-            return new Field(offsetOnLastRoad, true);
+        if ((wentThroughZeroFlg && !previousField.isLastLineField())
+                && (targetFieldNumber >= sourceField.number() - 1)) {
+            int offsetOnLastRoad = targetFieldNumber - (sourceField.number() - 1);
+            return Pair.of(Optional.of(new Field(offsetOnLastRoad, true)), true);
         }
 
-        return new Field(targetFieldNumber, false);
+        if (previousField.isLastLineField()) {
+            if (targetFieldNumber > lastLineFieldsByColor.get(targetPeg.color()).size() - 1) {
+                return Pair.of(Optional.empty(), false);
+            } else {
+                return Pair.of(Optional.of(new Field(targetFieldNumber, true)), false);
+            }
+        }
+
+        return Pair.of(Optional.of(new Field(targetFieldNumber, false)),wentThroughZeroFlg);
     }
 
-    public Field getSourceField(Color color){
+    public Field getSourceField(Color color) {
         return this.sourceFields.get(color);
     }
 
     public MovePegType isPossibleMoveBasePeg(Player currentPlayer) {
-        
+
         Field targetField = getSourceField(currentPlayer.getColor());
-        
-        if (currentPlayer.getBasePegs().isEmpty()){
+
+        if (currentPlayer.getBasePegs().isEmpty()) {
             return MovePegType.NO_SOURCE;
         }
-        
+
         Peg peg = currentPlayer.getAvailableBasePeg();
-        return isPossibleMoveActivePeg(targetField, peg);
+        return isPossibleMovePeg(targetField, peg);
+    }
+
+    public List<Peg> getHomeTrianglesByColor(Color color){
+        return homeTrianglesByColor.get(color);
+    }
+
+    public Field getPegPosition(Peg peg){
+        return fieldByPeg.get(peg);
+    }
+
+    public Map<Color, Map<Field, List<Peg>>> getLastLineFieldsByColor() {
+        return lastLineFieldsByColor;
+    }
+
+    public Map<Field, List<Peg>> getPegsByField() {
+        return pegsByField;
+    }
+
+    public Set<Peg> getWentThroughZero() {
+        return wentThroughZero;
+    }
+
+    public Field getFieldByPeg(Peg peg) {
+        return fieldByPeg.get(peg);
     }
 }

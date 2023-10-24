@@ -12,8 +12,8 @@ public class Player {
     private List<Peg> basePegs = new ArrayList<>();
     private List<Peg> activePegs = new ArrayList<>();
 
-    public Player(Color color){
-        for (int i=0; i< NUMBER_OF_PEGS; i++){
+    public Player(Color color, int numberOfPegs){
+        for (int i=0; i< numberOfPegs; i++){
             basePegs.add(new Peg(color, i));
         }
         this.color = color;
@@ -50,5 +50,9 @@ public class Player {
 
     public Color getColor(){
         return this.color;
+    }
+
+    public void moveFromActivePegsToHome(Peg peg) {
+        this.activePegs.remove(peg);
     }
 }

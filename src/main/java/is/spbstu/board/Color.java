@@ -1,8 +1,14 @@
 package is.spbstu.board;
 
 public enum Color {
-    GREEN,
-    YELLOW,
-    RED,
-    BLUE
+    GREEN ("g"),
+    YELLOW ("y"),
+    RED("r"),
+    BLUE("b");
+
+    private final String name;
+
+    Color(String name) {
+        this.name = name;
+    }
 }
