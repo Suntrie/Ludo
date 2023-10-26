@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class GameLoopTest {
 
     @Test
-    public void playMultipleTimes(){
+    void playMultipleTimes(){
 
        for (int i=0; i<10000; i++){
            GameLoop.main(new String[]{"-autoplay"});
@@ -19,7 +19,7 @@ public class GameLoopTest {
     @Test
     public void playTraceably(){
         GameLoop.main(new String[]{"-autoplay", "-handLongSideLength=4",
-                "-handShortSideWidth=3", "-numberOfPegs=1", "-numberOfPlayers=1"});
+                "-handShortSideWidth=3", "-numberOfPegs=2", "-numberOfPlayers=1"});
     }
 
     @Test
@@ -28,7 +28,7 @@ public class GameLoopTest {
                 "-handShortSideWidth=3", "-numberOfPegs=2", "-numberOfPlayers=1"});
     }
 
-    @Test
+  /*  @Test
     public void playWithMultiplePegsOfTheSameColor(){
         GameLoop.main(new String[]{"-autoplay", "-handLongSideLength=4",
                 "-handShortSideWidth=3", "-numberOfPegs=2", "-numberOfPlayers=1"});
@@ -43,5 +43,5 @@ public class GameLoopTest {
                 );
         assertEquals(0, game.getCrossBoard().getWentThroughZero().size());
         assertEquals(2, game.getCrossBoard().getHomeTrianglesByColor(Color.GREEN).size());
-    }
+    }*/
 }

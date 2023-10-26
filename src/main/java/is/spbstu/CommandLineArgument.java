@@ -1,21 +1,23 @@
 package is.spbstu;
 
+import is.spbstu.board.CrossBoard;
+import is.spbstu.board.Player;
+import is.spbstu.game.ConsoleGame;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
-import org.kohsuke.args4j.Argument;
 
 public class CommandLineArgument {
 
     @Option(name="-autoplay")
     private boolean autoplay;
     @Option(name = "-handLongSideLength")
-    private Integer handLongSideLength;
+    private Integer handLongSideLength = CrossBoard.HAND_LONG_SIDE_LENGTH;
     @Option(name = "-handShortSideWidth")
-    private Integer handShortSideWidth;
+    private Integer handShortSideWidth = CrossBoard.HAND_SHORT_SIDE_WIDTH;
     @Option(name = "-numberOfPegs")
-    private Integer numberOfPegs;
+    private Integer numberOfPegs = Player.NUMBER_OF_PEGS;
     @Option(name = "-numberOfPlayers")
-    private Integer numberOfPlayers;
+    private Integer numberOfPlayers = ConsoleGame.NUMBER_OF_PLAYERS;
 
     public CommandLineArgument(String[] args) {
 

@@ -1,191 +1,199 @@
 package is.spbstu;
 
 import is.spbstu.board.*;
+import is.spbstu.game.MoveResult;
 import org.junit.jupiter.api.Test;
+
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class BoardTest {
-
+class BoardTest {
     @Test
-    public void setMultiplePegsOfDifferentColorOnSameFieldWithEat(){
-        CrossBoard crossBoard = new CrossBoard(3 ,3);
+    void setMultiplePegsOfDifferentColorOnSameFieldWithEat() {
+        CrossBoard crossBoard = new CrossBoard(3, 3);
         Peg bluePeg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(bluePeg, MovePegType.NORMAL);
-        assertEquals(new Field(25, false), crossBoard.getPegPosition(bluePeg));
+        crossBoard.movePegFromBase(bluePeg);
+        assertEquals(new Field(26, false), crossBoard.getPegPosition(bluePeg));
 
         Peg redPeg = new Peg(Color.RED, 1);
-        crossBoard.moveBasePeg(redPeg, MovePegType.NORMAL);
+        crossBoard.movePegFromBase(redPeg);
         crossBoard.moveActivePeg(redPeg.color(), redPeg.number(),
-                7, MovePegType.WITH_EAT);
-        assertEquals(new Field(25, false), crossBoard.getPegPosition(redPeg));
+                7);
+        assertEquals(new Field(26, false), crossBoard.getPegPosition(redPeg));
 
-        assertEquals(1, crossBoard.getPegsByField().get(new Field(25, false)).size());
+        assertEquals(1, crossBoard.getPegsByField().get(new Field(26, false)).size());
     }
 
     @Test
-    public void makeCircle(){
+    void makeCircle() {
 
-        CrossBoard crossBoard = new CrossBoard(3 ,3);
-        Peg peg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(peg, MovePegType.NORMAL);
+        CrossBoard crossBoard = new CrossBoard(3, 3);
+        Peg bluePeg = new Peg(Color.BLUE, 1);
+        crossBoard.movePegFromBase(bluePeg);
 
-        assertEquals(new Field(25, false), crossBoard.getPegPosition(peg));
-        crossBoard.moveActivePeg(peg.color(), peg.number(),
-                5, MovePegType.NORMAL);
+        assertEquals(new Field(26, false), crossBoard.getPegPosition(bluePeg));
+        assertFalse(crossBoard.getWentThroughZero().contains(bluePeg));
 
-        assertEquals(new Field(2, false), crossBoard.getPegPosition(peg));
-        assertTrue(crossBoard.getWentThroughZero().contains(peg));
+        crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(),
+                5);
+
+        assertEquals(new Field(3, false), crossBoard.getPegPosition(bluePeg));
+        assertTrue(crossBoard.getWentThroughZero().contains(bluePeg));
     }
 
     @Test
-    public void goToLastLine(){
+    void goToLastLine() {
 
-        CrossBoard crossBoard = new CrossBoard(3 ,3);
-        Peg peg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(peg, MovePegType.NORMAL);
+        CrossBoard crossBoard = new CrossBoard(3, 3);
+        Peg bluePeg = new Peg(Color.BLUE, 1);
+        crossBoard.movePegFromBase(bluePeg);
 
-        assertEquals(new Field(25, false), crossBoard.getPegPosition(peg));
-        crossBoard.moveActivePeg(peg.color(), peg.number(),
-                27, MovePegType.NORMAL);
+        crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(), 27);
 
-        assertEquals(new Field(0, true), crossBoard.getPegPosition(peg));
-        assertTrue(crossBoard.getWentThroughZero().contains(peg));
+        assertEquals(new Field(0, true), crossBoard.getPegPosition(bluePeg));
+        assertTrue(crossBoard.getWentThroughZero().contains(bluePeg));
     }
 
     @Test
-    public void goToLastLineWithExcessWithinLimit(){
+    void goToLastLineWithExcessWithinLimit() {
 
-        CrossBoard crossBoard = new CrossBoard(3 ,3);
-        Peg peg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(peg, MovePegType.NORMAL);
+        CrossBoard crossBoard = new CrossBoard(3, 3);
+        Peg bluePeg = new Peg(Color.BLUE, 1);
+        crossBoard.movePegFromBase(bluePeg);
 
-        assertEquals(new Field(25, false), crossBoard.getPegPosition(peg));
-        crossBoard.moveActivePeg(peg.color(), peg.number(),
-                29, MovePegType.NORMAL);
+        crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(), 28);
 
-        assertEquals(new Field(2, true), crossBoard.getPegPosition(peg));
-        assertTrue(crossBoard.getWentThroughZero().contains(peg));
-    }
-
-
-    @Test
-    public void goToLastLineWithGoToHome(){
-
-        CrossBoard crossBoard = new CrossBoard(3 ,3);
-        Peg peg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(peg, MovePegType.NORMAL);
-
-        assertEquals(new Field(25, false), crossBoard.getPegPosition(peg));
-        crossBoard.moveActivePeg(peg.color(), peg.number(),
-                30, MovePegType.NORMAL);
-
-        assertNull(crossBoard.getPegPosition(peg));
-        assertTrue(crossBoard.getHomeTrianglesByColor(Color.BLUE).contains(peg));
-    }
-
-
-    @Test
-    public void goToLastLineWithGoToHomeIn2Steps(){
-
-        CrossBoard crossBoard = new CrossBoard(3 ,3);
-        Peg peg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(peg, MovePegType.NORMAL);
-
-        assertEquals(new Field(25, false), crossBoard.getPegPosition(peg));
-        crossBoard.moveActivePeg(peg.color(), peg.number(),
-                29, MovePegType.NORMAL);
-        crossBoard.moveActivePeg(peg.color(), peg.number(),
-                1, MovePegType.NORMAL);
-        assertNull(crossBoard.getPegPosition(peg));
-        assertTrue(crossBoard.getHomeTrianglesByColor(Color.BLUE).contains(peg));
+        assertEquals(new Field(1, true), crossBoard.getPegPosition(bluePeg));
+        assertTrue(crossBoard.getWentThroughZero().contains(bluePeg));
     }
 
     @Test
-    public void goToLastLineWithExcessOutsideLimit(){
+    void goToLastLineWithGoToHome() {
 
-        CrossBoard crossBoard = new CrossBoard(3 ,3);
-        Peg peg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(peg, MovePegType.NORMAL);
+        //TODO: player win + game win
 
-        assertEquals(new Field(25, false), crossBoard.getPegPosition(peg));
-        crossBoard.moveActivePeg(peg.color(), peg.number(),
-                29, MovePegType.NORMAL);
-        assertThrows(IllegalStateException.class, ()-> crossBoard.moveActivePeg(peg.color(), peg.number(),
-                2, MovePegType.NORMAL));
+        CrossBoard crossBoard = new CrossBoard(3, 3);
+        Peg bluePeg = new Peg(Color.BLUE, 1);
+        crossBoard.movePegFromBase(bluePeg);
+
+        crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(), 29);
+
+        checkCrossBoardCleanOnWin(crossBoard, bluePeg);
+    }
+
+    private static void checkCrossBoardCleanOnWin(CrossBoard crossBoard, Peg bluePeg) {
+        assertNull(crossBoard.getPegPosition(bluePeg));
+        assertFalse(crossBoard.getWentThroughZero().contains(bluePeg));
+        assertFalse(crossBoard.getLastLineFieldsByColor().get(Color.BLUE).values().stream().flatMap(Collection::stream)
+                .collect(Collectors.toSet()).contains(bluePeg));
+        assertFalse(crossBoard.getPegsByField().values().stream().flatMap(Collection::stream)
+                .collect(Collectors.toSet()).contains(bluePeg));
     }
 
     @Test
-    public void setMultiplePegsOfSameColor2Block(){
+    void goToLastLineWithGoToHomeIn3Steps() {
+
+        CrossBoard crossBoard = new CrossBoard(3, 3);
+        Peg bluePeg = new Peg(Color.BLUE, 1);
+        crossBoard.movePegFromBase(bluePeg);
+
+        crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(), 24);
+        crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(), 3);
+        crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(), 2);
+
+        checkCrossBoardCleanOnWin(crossBoard, bluePeg);
+    }
+
+    @Test
+    void goToLastLineWithExcessOutsideLimit() {
+
+        CrossBoard crossBoard = new CrossBoard(3, 3);
+        Peg bluePeg = new Peg(Color.BLUE, 1);
+        crossBoard.movePegFromBase(bluePeg);
+
+        crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(),
+                28);
+        MoveResult moveResult = crossBoard.moveActivePeg(bluePeg.color(), bluePeg.number(),
+                2);
+        assertEquals(MovePegType.LAST_LINE_LIMIT_EXCESS, moveResult.movePegType());
+    }
+
+    @Test
+    void setMultiplePegsOfSameColor2Block(){
 
         Player bluePlayer = new Player(Color.BLUE, 3);
         CrossBoard crossBoard = new CrossBoard(3 ,3);
 
         Peg firstPeg = new Peg(Color.BLUE, 0);
-        crossBoard.moveBasePeg(firstPeg, MovePegType.NORMAL);
-        bluePlayer.fromBaseToActivePegs();
+        MoveResult moveResult = crossBoard.movePegFromBase(firstPeg);
+        bluePlayer.movePegForward(moveResult);
+
         crossBoard.moveActivePeg(firstPeg.color(), firstPeg.number(),
-                3, MovePegType.NORMAL);
+                3);
 
         Peg secondPeg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(secondPeg, MovePegType.NORMAL);
-        bluePlayer.fromBaseToActivePegs();
+        moveResult = crossBoard.movePegFromBase(secondPeg);
+        bluePlayer.movePegForward(moveResult);
         crossBoard.moveActivePeg(secondPeg.color(), secondPeg.number(),
-                3, MovePegType.NORMAL);
+                3);
 
         assertEquals(crossBoard.getFieldByPeg(firstPeg), crossBoard.getFieldByPeg(secondPeg));
 
         Peg thirdPeg = new Peg(Color.BLUE, 2);
-        crossBoard.moveBasePeg(thirdPeg, MovePegType.NORMAL);
-        bluePlayer.fromBaseToActivePegs();
+        moveResult = crossBoard.movePegFromBase(thirdPeg);
+        bluePlayer.movePegForward(moveResult);
+        moveResult = crossBoard.moveActivePeg(thirdPeg.color(), thirdPeg.number(),
+                3);
         assertEquals(MovePegType.BLOCKED,
-                crossBoard.isPossibleMoveActivePeg(bluePlayer,  2, 3));
+                moveResult.movePegType());
 
         Player redPlayer = new Player(Color.RED, 3);
         Peg redPeg = new Peg(Color.RED, 2);
-        crossBoard.moveBasePeg(redPeg, MovePegType.NORMAL);
-        redPlayer.fromBaseToActivePegs();
-        assertEquals(MovePegType.BLOCKED,
-                crossBoard.isPossibleMoveActivePeg(redPlayer, 2, 10));
+        moveResult = crossBoard.movePegFromBase(redPeg);
+        redPlayer.movePegForward(moveResult);
+        moveResult = crossBoard.moveActivePeg(redPeg.color(), redPeg.number(),
+                10);
+        assertEquals(MovePegType.BLOCKED, moveResult.movePegType());
 
     }
 
+
     @Test
-    public void setMultiplePegsOfSameColor2BlockOnSourceField(){
+    void setMultiplePegsOfSameColor2BlockOnSourceField(){
 
         Player bluePlayer = new Player(Color.BLUE, 3);
         CrossBoard crossBoard = new CrossBoard(3 ,3);
 
-        Peg firstPeg = new Peg(Color.BLUE, 2);
-        crossBoard.moveBasePeg(firstPeg, MovePegType.NORMAL);
-        bluePlayer.fromBaseToActivePegs();
+        Peg firstPeg = new Peg(Color.BLUE, 0);
+        MoveResult moveResult = crossBoard.movePegFromBase(firstPeg);
+        bluePlayer.movePegForward(moveResult);
+
 
         Peg secondPeg = new Peg(Color.BLUE, 1);
-        crossBoard.moveBasePeg(secondPeg, MovePegType.NORMAL);
-        bluePlayer.fromBaseToActivePegs();
+        moveResult = crossBoard.movePegFromBase(secondPeg);
+        bluePlayer.movePegForward(moveResult);
+
+        assertEquals(crossBoard.getFieldByPeg(firstPeg), crossBoard.getFieldByPeg(secondPeg));
+
+        Peg thirdPeg = new Peg(Color.BLUE, 2);
+        moveResult = crossBoard.movePegFromBase(thirdPeg);
 
         assertEquals(MovePegType.BLOCKED,
-                crossBoard.isPossibleMoveBasePeg(bluePlayer));
+                moveResult.movePegType());
 
-        Player redPlayer = new Player(Color.RED, 3);
-        Peg redPeg = new Peg(Color.RED, 2);
-        crossBoard.moveBasePeg(redPeg, MovePegType.NORMAL);
-        redPlayer.fromBaseToActivePegs();
-        assertEquals(MovePegType.BLOCKED,
-                crossBoard.isPossibleMoveActivePeg(redPlayer,  2, 7));
+        crossBoard.moveActivePeg(secondPeg.color(), secondPeg.number(),
+                3);
 
-        assertEquals(MovePegType.NORMAL,
-                crossBoard.isPossibleMoveActivePeg(bluePlayer,  2, 2));
-        crossBoard.moveActivePeg(firstPeg.color(), firstPeg.number(),
-                2, MovePegType.NORMAL);
+        moveResult = crossBoard.movePegFromBase(thirdPeg);
+        bluePlayer.movePegForward(moveResult);
 
-        assertEquals(MovePegType.NORMAL,
-                crossBoard.isPossibleMoveBasePeg(bluePlayer));
-        Peg thirdPeg = new Peg(Color.BLUE, 0);
-        crossBoard.moveBasePeg(thirdPeg, MovePegType.NORMAL);
-        bluePlayer.fromBaseToActivePegs();
+        assertEquals(MovePegType.TO_ACTIVE,
+                moveResult.movePegType());
 
-        assertEquals(crossBoard.getFieldByPeg(thirdPeg), crossBoard.getFieldByPeg(secondPeg));
-        assertNotEquals(crossBoard.getFieldByPeg(firstPeg), crossBoard.getFieldByPeg(thirdPeg));
+        assertEquals(crossBoard.getFieldByPeg(thirdPeg), crossBoard.getFieldByPeg(firstPeg));
+        assertNotEquals(crossBoard.getFieldByPeg(firstPeg), crossBoard.getFieldByPeg(secondPeg));
+
     }
 }

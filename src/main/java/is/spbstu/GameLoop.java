@@ -1,137 +1,89 @@
 package is.spbstu;
 
-import is.spbstu.board.*;
-import is.spbstu.game.ConsoleGame;
 import is.spbstu.game.Game;
 import is.spbstu.game.GameCreator;
-import org.apache.commons.lang3.tuple.Pair;
+import is.spbstu.game.MoveResult;
 
-import java.util.*;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static is.spbstu.board.MovePegType.*;
 
 public class GameLoop {
 
     private static final Random random = new Random();
-    public final static Scanner scanner = new Scanner(System.in);
-
+    public static final Scanner scanner = new Scanner(System.in);
     private static Game game;
 
     public static void main(String[] args) {
-        CommandLineArgument values = new CommandLineArgument(args);
 
-        boolean autoPlay = values.getAutoplay();
-        int handLongSideLength = values.getHandLongSideLength() == null ? CrossBoard.HAND_LONG_SIDE_LENGTH:
-                values.getHandLongSideLength();
-        int handShortSideWidth = values.getHandShortSideWidth() == null? CrossBoard.HAND_SHORT_SIDE_WIDTH:
-                values.getHandShortSideWidth();
-        int numberOfPegs = values.getNumberOfPegs() == null? Player.NUMBER_OF_PEGS: values.getNumberOfPegs();
-        int numberOfPlayers = values.getNumberOfPlayers() == null? ConsoleGame.NUMBER_OF_PLAYERS : values.getNumberOfPlayers();
+        CommandLineArgument arguments = new CommandLineArgument(args);
 
-        game = GameCreator.createGame();
-        game.initGame(handLongSideLength, handShortSideWidth,
-                numberOfPegs, numberOfPlayers);
+        game = GameCreator.createGame(arguments.getHandLongSideLength(),
+                arguments.getHandShortSideWidth(),
+                arguments.getNumberOfPegs(),
+                arguments.getNumberOfPlayers());
 
-        CrossBoard board = game.getCrossBoard();
-        List<Player> players = game.getPlayers();
+        int currentPlayerIdx = 0;
 
-        int i = 0;
-        Player currentPlayer = players.get(i);
+        while (!game.checkForWin(currentPlayerIdx, arguments.getNumberOfPegs())) {
 
-        while (!game.checkForWin(currentPlayer, numberOfPegs)) {
+            String currentPlayer = game.getPlayerName(currentPlayerIdx);
+            int diceValue = game.rollDice();
+
             System.out.println("-----------------------------------------");
-            //System.out.println(board.toString());
+            System.out.printf("Move of %s%n",currentPlayer);
+            System.out.printf("Dice value %s%n", diceValue);
 
-            currentPlayer = players.get(i);
-            System.out.println(String.format("Move of %s", currentPlayer.getColor()));
-
-            int diceNumber = game.rollDice();
-            System.out.println(String.format("Dice value %s", diceNumber));
-
-            boolean magicDiceNumber = diceNumber == 6;
-
-            MovePegType movePegType = null;
             boolean addNewPeg = false;
 
-            if (magicDiceNumber) {
-
-                addNewPeg = currentPlayer.getActivePegs().isEmpty() ||  !currentPlayer.getBasePegs().isEmpty() && askPlayerAddPeg(currentPlayer, autoPlay);
-
-                if (addNewPeg) {
-
-                    movePegType = board.isPossibleMoveBasePeg(currentPlayer);
-
-                    if (Set.of(NO_SOURCE, BLOCKED).contains(movePegType)) {
-                        System.out.println(movePegType.getMessage());
-                        continue;
-                    }
-                }
-            }
-            Pair<Peg, Optional<Peg>> moveResult = null;
-
-            if (addNewPeg) {
-                Peg newActivePeg = currentPlayer.getAvailableBasePeg();
-                currentPlayer.fromBaseToActivePegs();
-                moveResult = board.moveBasePeg(newActivePeg, movePegType);
-                game.checkAndMoveEatenOpponentPegToBase(moveResult.getRight());
-
-            } else {
-                if (currentPlayer.getActivePegs().isEmpty()){
-                    System.out.println(String.format("Player %s couldn't move (no active pegs)",
-                            currentPlayer.getColor()));
-                    i= (i + 1) % players.size();
-                    continue;
-                };
-
-                int pegNumber = askPlayerPegNumber(currentPlayer, diceNumber, autoPlay);
-                movePegType = board.isPossibleMoveActivePeg(currentPlayer, pegNumber, diceNumber);
-                if (Set.of(NO_SOURCE, BLOCKED, LAST_LINE_LIMIT_EXCESS).contains(movePegType)) {
-                    System.out.println(movePegType.getMessage());
-                    continue;
-                }
-
-                moveResult = board.moveActivePeg(currentPlayer.getColor(), pegNumber, diceNumber, movePegType);
-                game.checkAndMoveEatenOpponentPegToBase(moveResult.getRight());
+            if (game.canPlayerAddPeg(currentPlayerIdx, diceValue)){
+               addNewPeg = askPlayerAddPeg(currentPlayer, arguments.getAutoplay());
             }
 
-            System.out.println(moveResult.getRight().isPresent()? String.format(movePegType.getMessage(),
-                    moveResult.getRight().get().color(), moveResult.getRight().get().number() ): movePegType.getMessage());
+            int activePeg = -1;
 
-            Peg affectedPeg = moveResult.getLeft();
-
-            if (board.getPegPosition(affectedPeg)==null){
-                System.out.println(String.format("Move result: peg %s reached the home", affectedPeg));
-                currentPlayer.moveFromActivePegsToHome(affectedPeg);
-            }else{
-                System.out.println(String.format("Move result: peg %s on field %s", affectedPeg,
-                        board.getPegPosition(affectedPeg)));
+            if ((!addNewPeg)&&(game.canPlayerMovePeg(currentPlayerIdx))){
+                activePeg = askPlayerPegNumber(currentPlayer,game.getActivePegNumbers(currentPlayerIdx), diceValue, arguments.getAutoplay());
             }
 
-            i = magicDiceNumber ? i : (i + 1) % players.size();
+            if (!addNewPeg && activePeg==-1){
+                System.out.println("Sorry, the move is impossible");
+                currentPlayerIdx=getNextPlayerIdx(currentPlayerIdx, arguments);
+                continue;
+            }
+
+            MoveResult moveResult = game.makeMove(currentPlayerIdx, diceValue, addNewPeg, activePeg);
+
+            System.out.printf(moveResult.toString());
+
+            currentPlayerIdx = diceValue==6 ? currentPlayerIdx : getNextPlayerIdx(currentPlayerIdx, arguments);
         }
 
-        System.out.println(String.format("Winner: %s", currentPlayer.getColor()));
+        System.out.printf("Winner: %s%n", game.getPlayerName(currentPlayerIdx));
 
     }
 
-    private static int askPlayerPegNumber(Player player, int diceNumber, boolean autoplay) {
+    private static int getNextPlayerIdx(int currentPlayerIdx, CommandLineArgument arguments) {
+        return (currentPlayerIdx + 1) % arguments.getNumberOfPlayers();
+    }
 
-        List<Integer> availablePegNumbers = player.getActivePegs().stream().map(Peg::number).collect(Collectors.toList());
+    private static int askPlayerPegNumber(String player, List<Integer> availablePegNumbers, int diceNumber, boolean autoplay) {
 
-        if (autoplay){
+        if (autoplay) {
             return availablePegNumbers.get(random.nextInt(availablePegNumbers.size()));
         }
 
         String availablePegNumbersString = availablePegNumbers
                 .stream().map(String::valueOf).collect(Collectors.joining());
 
-        System.out.println(String.format("Player %s, please, input number of active peg to move for %s positions", player.getColor(), diceNumber));
-        System.out.println(String.format("Available numbers: %s", availablePegNumbersString));
+        System.out.printf("Player %s, please, input number of active peg to move for %s positions%n", player, diceNumber);
+        System.out.printf("Available numbers: %s%n", availablePegNumbersString);
 
         while (true) {
 
-            Integer answer = scanner.nextInt();
+            int answer = scanner.nextInt();
 
             if (availablePegNumbers.contains(answer)) {
                 return answer;
@@ -141,14 +93,14 @@ public class GameLoop {
         }
     }
 
-    private static boolean askPlayerAddPeg(Player player, boolean autoplay) {
+    private static boolean askPlayerAddPeg(String player, boolean autoplay) {
 
-        if (autoplay){
+        if (autoplay) {
             return random.nextBoolean();
         }
 
         while (true) {
-            System.out.println(String.format("Player %s, do you want to move one more peg from base to the board? Yes / no", player.getColor()));
+            System.out.printf("Player %s, do you want to move one more peg from base to the board? Yes / no%n", player);
 
             String answer = scanner.next().toLowerCase();
 

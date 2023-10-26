@@ -1,16 +1,17 @@
 package is.spbstu.board;
 
+import is.spbstu.game.MoveResult;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class Player {
 
     public static final int NUMBER_OF_PEGS = 4;
     private Color color;
-
     private List<Peg> basePegs = new ArrayList<>();
     private List<Peg> activePegs = new ArrayList<>();
+    private List<Peg> homePegs = new ArrayList<>();
 
     public Player(Color color, int numberOfPegs){
         for (int i=0; i< numberOfPegs; i++){
@@ -19,20 +20,7 @@ public class Player {
         this.color = color;
     }
 
-    public Peg fromBaseToActivePegs(){
-        Peg peg = basePegs.get(basePegs.size()-1);
-        basePegs.remove(peg);
-        activePegs.add(peg);
-        return peg;
-    }
-
-    public Peg fromActiveToBasePegs(Peg peg){
-        activePegs.remove(peg);
-        basePegs.add(peg);
-        return peg;
-    }
-
-    public Peg getAvailableBasePeg(){
+    public Peg getPegFromBase(){
         if(basePegs.isEmpty()){
             throw new IllegalStateException("Check presence basePegs before use of this method");
         }else{
@@ -52,7 +40,24 @@ public class Player {
         return this.color;
     }
 
-    public void moveFromActivePegsToHome(Peg peg) {
-        this.activePegs.remove(peg);
+    public void movePegForward(MoveResult moveResult) {
+        Peg peg = moveResult.originalPeg();
+
+        if (MovePegType.HOME.equals(moveResult.movePegType())) {
+            activePegs.remove(peg);
+            homePegs.add(peg);
+        }else if (MovePegType.TO_ACTIVE.equals(moveResult.movePegType())){
+            basePegs.remove(peg);
+            activePegs.add(peg);
+        }
+    }
+
+    public void movePegToBase(Peg peg) {
+        activePegs.remove(peg);
+        basePegs.add(peg);
+    }
+
+    public boolean isWinner(int numberOfPegs) {
+        return homePegs.size()==numberOfPegs;
     }
 }

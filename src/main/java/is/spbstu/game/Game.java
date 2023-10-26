@@ -1,24 +1,20 @@
 package is.spbstu.game;
 
-import is.spbstu.board.Color;
-import is.spbstu.board.CrossBoard;
-import is.spbstu.board.Peg;
-import is.spbstu.board.Player;
-
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public interface Game {
 
-    void initGame(int handLongSideLength, int handShortSideWidth, int numberOfPegs, int numberOfPlayers);
-    List<Player> getPlayers();
     int rollDice();
 
-    CrossBoard getCrossBoard();
-    Map<Color, Player> getPlayerByColorMap();
+    boolean canPlayerAddPeg(int playerIdx, int diceValue);
 
-    boolean checkForWin(Player currentPlayer, int numberOfPegs);
+    MoveResult makeMove(int playerIdx, int diceValue, boolean addNewPeg, int activePegNumber);
 
-    void checkAndMoveEatenOpponentPegToBase(Optional<Peg> opponentPegOpt);
+    boolean checkForWin(int playerIdx, int numberOfPegs);
+
+    boolean canPlayerMovePeg(int playerIdx);
+
+    String getPlayerName(int playerIdx);
+
+    List<Integer> getActivePegNumbers(int playerIdx);
 }
