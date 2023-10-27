@@ -2,16 +2,15 @@ package is.spbstu.board;
 
 import is.spbstu.game.MoveResult;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class Player {
 
     public static final int NUMBER_OF_PEGS = 4;
-    private Color color;
-    private List<Peg> basePegs = new ArrayList<>();
-    private List<Peg> activePegs = new ArrayList<>();
-    private List<Peg> homePegs = new ArrayList<>();
+    private final Color color;
+    private final TreeSet<Peg> basePegs = new TreeSet<>();
+    private final List<Peg> activePegs = new ArrayList<>();
+    private final List<Peg> homePegs = new ArrayList<>();
 
     public Player(Color color, int numberOfPegs){
         for (int i=0; i< numberOfPegs; i++){
@@ -24,7 +23,7 @@ public class Player {
         if(basePegs.isEmpty()){
             throw new IllegalStateException("Check presence basePegs before use of this method");
         }else{
-            return basePegs.get(basePegs.size()-1);
+            return basePegs.first();
         }
     }
 
@@ -32,7 +31,7 @@ public class Player {
         return this.activePegs;
     }
 
-    public List<Peg> getBasePegs(){
+    public Set<Peg> getBasePegs(){
         return this.basePegs;
     }
 
@@ -46,8 +45,9 @@ public class Player {
         if (MovePegType.HOME.equals(moveResult.movePegType())) {
             activePegs.remove(peg);
             homePegs.add(peg);
-        }else if (MovePegType.TO_ACTIVE.equals(moveResult.movePegType())){
-            basePegs.remove(peg);
+        }else if (Set.of(MovePegType.TO_ACTIVE,
+                MovePegType.TO_ACTIVE_WITH_EAT).contains(moveResult.movePegType())){
+            basePegs.pollFirst();
             activePegs.add(peg);
         }
     }

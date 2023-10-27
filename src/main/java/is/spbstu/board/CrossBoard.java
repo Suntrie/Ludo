@@ -11,11 +11,11 @@ public class CrossBoard {
     public static final int HAND_LONG_SIDE_LENGTH = 6;
     public static final int HAND_SHORT_SIDE_WIDTH = 3;
 
-    private Map<Color, Map<Field, List<Peg>>> lastLineFieldsByColor = new HashMap<>();
-    private Map<Color, Field> generatorFieldByColor = new HashMap<>();
-    private Map<Peg, Field> fieldByPeg = new HashMap<>();
-    private Map<Field, List<Peg>> pegsByField = new LinkedHashMap<>();
-    private Set<Peg> wentThroughZero = new HashSet<>();
+    private final Map<Color, Map<Field, List<Peg>>> lastLineFieldsByColor = new HashMap<>();
+    private final Map<Color, Field> generatorFieldByColor = new HashMap<>();
+    private final Map<Peg, Field> fieldByPeg = new HashMap<>();
+    private final Map<Field, List<Peg>> pegsByField = new LinkedHashMap<>();
+    private final Set<Peg> wentThroughZero = new HashSet<>();
 
     public CrossBoard(int handLongSideLength, int handShortSideWidth) {
 
@@ -23,9 +23,8 @@ public class CrossBoard {
         boolean shortSideOffset = true;
         int fieldNumber = 0;
 
-        Color[] colors = Color.values();
 
-        for (int i = 0; i < colors.length; i++) {
+        for (Color color : Color.values()) {
             int columnNumber = 0;
             int rowNumber = 0;
 
@@ -51,7 +50,7 @@ public class CrossBoard {
                 Field field = new Field(fieldNumber);
                 pegsByField.put(field, new ArrayList<>());
                 if (rowNumber == 0) {
-                    generatorFieldByColor.put(colors[i], field);
+                    generatorFieldByColor.put(color, field);
                 }
 
                 rowNumber++;
@@ -65,7 +64,7 @@ public class CrossBoard {
                 lastLineMap.put(new Field(l, true), new ArrayList<>());
             }
 
-            lastLineFieldsByColor.put(colors[i], lastLineMap);
+            lastLineFieldsByColor.put(color, lastLineMap);
         }
 
     }
@@ -127,7 +126,7 @@ public class CrossBoard {
         MoveResult moveResult = prognoseMoveResult(moveFieldChange, peg);
 
         switch (moveResult.movePegType()) {
-            case WITH_EAT -> {
+            case NORMAL_WITH_EAT, TO_ACTIVE_WITH_EAT -> {
                 Peg opponentPeg = moveResult.eatenPeg().get();
                 fieldByPeg.remove(opponentPeg);
                 fieldByPeg.put(peg, destinationField);
@@ -188,7 +187,8 @@ public class CrossBoard {
                     .findFirst();
 
             if (opponentPeg.isPresent()) {
-                return new MoveResult(MovePegType.WITH_EAT, moveFieldChange, peg, opponentPeg);
+                return new MoveResult(moveFieldChange.wentToActive()? MovePegType.TO_ACTIVE_WITH_EAT: MovePegType.NORMAL_WITH_EAT,
+                        moveFieldChange, peg, opponentPeg);
             }
         }
 

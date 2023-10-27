@@ -1,6 +1,28 @@
-/*
 package is.spbstu;
 
+import is.spbstu.game.Game;
+import is.spbstu.game.GameCreator;
+import is.spbstu.game.MoveResult;
+import org.junit.jupiter.api.Test;
+
+class GameTest {
+
+    @Test
+    void eatPeg() {
+
+        Game game = GameCreator.createGame(3, 3,
+                2, 2);
+        MoveResult firstPlayerMoveResult = game.makeMove(0,6,true,-1);
+        MoveResult secondPlayerMoveResult = game.makeMove(1,6,true,-1);
+
+        MoveResult eat = game.makeMove(0,7,false,1);
+        MoveResult movePreviouslyEaten = game.makeMove(1,6,true,-1);
+
+        System.out.println();
+
+    }
+}
+/*
 import is.spbstu.board.*;
 import is.spbstu.game.ConsoleGame;
 import is.spbstu.game.Game;

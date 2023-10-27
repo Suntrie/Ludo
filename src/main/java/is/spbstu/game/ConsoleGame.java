@@ -40,7 +40,8 @@ public class ConsoleGame implements Game {
         if (moveResult.movePegType().getMoveSucceeded()) {
             player.movePegForward(moveResult);
         }
-        if (MovePegType.WITH_EAT.equals(moveResult.movePegType())) {
+        if (Set.of(MovePegType.NORMAL_WITH_EAT,
+                MovePegType.TO_ACTIVE_WITH_EAT).contains(moveResult.movePegType())) {
             Peg eatenPeg = moveResult.eatenPeg().get();
             Player opponentPlayer = playerByColor.get(eatenPeg.color());
             opponentPlayer.movePegToBase(eatenPeg);

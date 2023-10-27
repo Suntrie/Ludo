@@ -3,11 +3,9 @@ package is.spbstu;
 import is.spbstu.game.Game;
 import is.spbstu.game.GameCreator;
 import is.spbstu.game.MoveResult;
+import org.kohsuke.args4j.CmdLineException;
 
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GameLoop {
@@ -16,7 +14,7 @@ public class GameLoop {
     public static final Scanner scanner = new Scanner(System.in);
     private static Game game;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws CmdLineException {
 
         CommandLineArgument arguments = new CommandLineArgument(args);
 
@@ -76,7 +74,7 @@ public class GameLoop {
         }
 
         String availablePegNumbersString = availablePegNumbers
-                .stream().map(String::valueOf).collect(Collectors.joining());
+                .stream().sorted(Comparator.naturalOrder()).map(String::valueOf).collect(Collectors.joining());
 
         System.out.printf("Player %s, please, input number of active peg to move for %s positions%n", player, diceNumber);
         System.out.printf("Available numbers: %s%n", availablePegNumbersString);

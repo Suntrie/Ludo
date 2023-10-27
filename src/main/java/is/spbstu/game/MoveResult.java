@@ -24,16 +24,17 @@ public record MoveResult(MovePegType movePegType, MoveFieldChange moveFieldChang
         }
 
         String message = movePegType.getMessage();
+        stringBuilder.append("\n");
 
         switch (movePegType) {
-            case WITH_EAT -> {
-                stringBuilder.append(String.format("\n"+message, eatenPeg));
+            case NORMAL_WITH_EAT, TO_ACTIVE_WITH_EAT -> {
+                stringBuilder.append(String.format(message, eatenPeg));
             }
             case HOME -> {
-                stringBuilder.append(String.format("\n"+message, originalPeg));
+                stringBuilder.append(String.format(message, originalPeg));
             }
             default -> {
-                stringBuilder.append("\n"+message);
+                stringBuilder.append(message);
             }
         }
 

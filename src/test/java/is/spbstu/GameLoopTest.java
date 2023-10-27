@@ -1,15 +1,12 @@
 package is.spbstu;
 
-import is.spbstu.board.Color;
-import is.spbstu.game.Game;
 import org.junit.jupiter.api.Test;
+import org.kohsuke.args4j.CmdLineException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class GameLoopTest {
+class GameLoopTest {
 
     @Test
-    void playMultipleTimes(){
+    void playMultipleTimes() throws CmdLineException {
 
        for (int i=0; i<10000; i++){
            GameLoop.main(new String[]{"-autoplay"});
@@ -17,13 +14,13 @@ public class GameLoopTest {
     }
 
     @Test
-    public void playTraceably(){
+    void playTraceably() throws CmdLineException {
         GameLoop.main(new String[]{"-autoplay", "-handLongSideLength=4",
                 "-handShortSideWidth=3", "-numberOfPegs=2", "-numberOfPlayers=1"});
     }
 
     @Test
-    public void playTraceablyWith2PegsOfSameColor(){
+    void playTraceablyWith2PegsOfSameColor() throws CmdLineException {
         GameLoop.main(new String[]{"-autoplay", "-handLongSideLength=4",
                 "-handShortSideWidth=3", "-numberOfPegs=2", "-numberOfPlayers=1"});
     }

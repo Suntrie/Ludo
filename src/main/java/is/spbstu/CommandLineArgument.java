@@ -3,6 +3,7 @@ package is.spbstu;
 import is.spbstu.board.CrossBoard;
 import is.spbstu.board.Player;
 import is.spbstu.game.ConsoleGame;
+import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
@@ -19,13 +20,14 @@ public class CommandLineArgument {
     @Option(name = "-numberOfPlayers")
     private Integer numberOfPlayers = ConsoleGame.NUMBER_OF_PLAYERS;
 
-    public CommandLineArgument(String[] args) {
+    public CommandLineArgument(String[] args) throws CmdLineException {
 
         CmdLineParser parser = new CmdLineParser(this);
         try {
             parser.parseArgument(args);
-        } catch (Exception e) {
+        } catch (CmdLineException e) {
             System.out.println(e.getMessage());
+            throw e;
         }
     }
 
